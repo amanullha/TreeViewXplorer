@@ -11,6 +11,11 @@ const port = process.env.APP_PORT;
 app.get("/", (req, res) => {
     res.send("Welcome to folder tree view");
 });
+app.get("/test", (req, res) => {
+    res.send({
+        data: "hello! from backend",
+    });
+});
 app.listen(port, () => {
     console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
 });
