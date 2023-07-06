@@ -1,38 +1,33 @@
 {
-  "name": "treeviewxplorer",
-  "version": "1.0.0",
-  "description": "",
-  "main": "src/index.ts",
-    "types": "dist/index.d.ts",
-
-  "engines": {
-    "node": ">=16.18",
-    "npm": ">=8.18"
-  },
-
-  "scripts": {
-  "pre-commit": "ts.check && build && add-build",
-  "start": "node dist/index.js",
-  "dev": "concurrently \"npm run build:watch\" \"nodemon -q dist/index.js\"",
-  "build": "npm run clean && tsc",
-  "build:watch": "npm run build -- --watch",
-  "clean": "rm -rf dist"
-},
-
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@types/express": "^4.17.17",
-    "@types/node": "^20.4.0",
-    "concurrently": "^8.2.0",
-    "nodemon": "^2.0.22",
-    "pre-commit": "^1.2.2",
-    "rimraf": "^5.0.1",
-    "typescript": "^5.1.6"
-  },
-  "dependencies": {
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2"
-  }
+	"name": "express-typescript-vercel-part2",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"start": "nodemon src/index.ts",
+		"build": "rimraf dist && tsc",
+		"ts.check": "tsc --project tsconfig.json",
+		"add-build": "git add dist",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"pre-commit": [
+		"ts.check",
+		"build",
+		"add-build"
+	],
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"devDependencies": {
+		"@types/express": "^4.17.14",
+		"@types/node": "^18.11.9",
+		"nodemon": "^2.0.20",
+		"pre-commit": "^1.2.2",
+		"ts-node": "^10.9.1",
+		"typescript": "^4.8.4"
+	},
+	"dependencies": {
+		"express": "^4.18.2",
+		"rimraf": "^5.0.1"
+	}
 }

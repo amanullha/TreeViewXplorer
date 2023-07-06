@@ -19,3 +19,4 @@ app.get("/test", (req, res) => {
 app.listen(port, () => {
     console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
 });
+//# sourceMappingURL=index.js.map
