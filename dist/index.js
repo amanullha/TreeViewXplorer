@@ -279,9 +279,8 @@ app.get("/folders/structure", (req, res) => __awaiter(void 0, void 0, void 0, fu
             mainFolder = yield getRootFolder();
         }
         const subFolders = yield findFoldersByParentId(mainFolder === null || mainFolder === void 0 ? void 0 : mainFolder._id);
-        mainFolder.subFolders = subFolders;
         res.status(200).send({
-            data: mainFolder,
+            data: subFolders,
             success: true,
         });
     }

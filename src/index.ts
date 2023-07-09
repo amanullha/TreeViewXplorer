@@ -253,10 +253,9 @@ app.get("/folders/structure", async (req, res) => {
       mainFolder = await getRootFolder();
     }
     const subFolders = await findFoldersByParentId(mainFolder?._id);
-    mainFolder.subFolders = subFolders;
 
     res.status(200).send({
-      data: mainFolder,
+      data: subFolders,
       success: true,
     });
   } catch (error) {
