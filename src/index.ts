@@ -243,6 +243,29 @@ app.get("/folders/root-folder-structure", async (req, res) => {
     });
   }
 });
+app.get("/folders/structure", async (req, res) => {
+  const folderId = req.query.folderId;
+  try {
+    let mainFolder: any;
+    if (folderId) {
+      mainFolder = await findFolderById(folderId);
+    } else {
+      mainFolder = await getRootFolder();
+    }
+    const subFolders = await findFoldersByParentId(mainFolder?._id);
+    mainFolder.subFolders = subFolders;
+
+    res.status(200).send({
+      data: mainFolder,
+      success: true,
+    });
+  } catch (error) {
+    res.status(500).send({
+      error: error?.message,
+      success: false,
+    });
+  }
+});
 // Create Folder API (POST /folders)
 
 app.post("/root-folder", async (req, res) => {
