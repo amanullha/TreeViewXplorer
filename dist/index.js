@@ -108,6 +108,7 @@ function createRootFolder() {
         };
         const res = yield FolderModel.create(folderObj);
         const folder = res === null || res === void 0 ? void 0 : res.toObject();
+        yield physicalFolder_helper_1.PhysicalFolderHelper.getInstance().createFolder(folder);
         return folder;
     });
 }
@@ -204,6 +205,19 @@ function updateFolder(id, newFolderName) {
         folder = yield folder.save();
         yield physicalFolder_helper_1.PhysicalFolderHelper.getInstance().updateFolder(oldName, folder.toObject());
         return folder;
+    });
+}
+function deleteRootFolder() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            yield FolderModel.deleteMany();
+            yield physicalFolder_helper_1.PhysicalFolderHelper.getInstance().deleteRootFolder();
+            return true;
+        }
+        catch (error) {
+            console.log("Error for delete root folder: ", error === null || error === void 0 ? void 0 : error.message);
+            return false;
+        }
     });
 }
 function deleteFolderById(folderId) {
@@ -305,6 +319,27 @@ app.post("/folder", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     catch (err) {
         console.error(err);
         res.status(500).send(err === null || err === void 0 ? void 0 : err.message);
+    }
+}));
+app.delete("/folder/all", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const done = yield deleteRootFolder();
+        if (done) {
+            return res.status(200).send({
+                message: "deleted successfully",
+                success: true,
+            });
+        }
+        else {
+            return res.status(200).send({
+                error: "Failed to delete root folder",
+                success: false,
+            });
+        }
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).send("Failed to delete root folder");
     }
 }));
 // Delete Folder API (DELETE /folders/:folderId)

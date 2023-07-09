@@ -45,6 +45,21 @@ export class PhysicalFolderHelper {
       console.error(`Error deleting folder "${folder?.name}":`, error);
     }
   }
+  async deleteRootFolder() {
+    const folderPath = `public/root`;
+
+    try {
+      const existFolder = await fs.existsSync(folderPath);
+      if (existFolder) {
+        fs.rmSync(folderPath, { recursive: true });
+        console.log(`clean`);
+      } else {
+        console.log(`Folder doesn't exist`);
+      }
+    } catch (error) {
+      console.error(`Error deleting root folder`, error);
+    }
+  }
 
   async updateFolder(OldFolderName: string, folder: any) {
     const newFolderPath = `${folder?.path}/${folder?.name}`;

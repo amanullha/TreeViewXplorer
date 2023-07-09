@@ -58,6 +58,24 @@ class PhysicalFolderHelper {
             }
         });
     }
+    deleteRootFolder() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const folderPath = `public/root`;
+            try {
+                const existFolder = yield fs.existsSync(folderPath);
+                if (existFolder) {
+                    fs.rmSync(folderPath, { recursive: true });
+                    console.log(`clean`);
+                }
+                else {
+                    console.log(`Folder doesn't exist`);
+                }
+            }
+            catch (error) {
+                console.error(`Error deleting root folder`, error);
+            }
+        });
+    }
     updateFolder(OldFolderName, folder) {
         return __awaiter(this, void 0, void 0, function* () {
             const newFolderPath = `${folder === null || folder === void 0 ? void 0 : folder.path}/${folder === null || folder === void 0 ? void 0 : folder.name}`;

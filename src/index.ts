@@ -99,6 +99,7 @@ async function createRootFolder() {
   };
   const res = await FolderModel.create(folderObj);
   const folder = res?.toObject();
+  await PhysicalFolderHelper.getInstance().createFolder(folder);
   return folder;
 }
 async function createFolder(body: any) {
@@ -181,6 +182,16 @@ async function updateFolder(id: string, newFolderName: string) {
   );
 
   return folder;
+}
+async function deleteRootFolder() {
+  try {
+    await FolderModel.deleteMany();
+    await PhysicalFolderHelper.getInstance().deleteRootFolder();
+    return true;
+  } catch (error) {
+    console.log("Error for delete root folder: ", error?.message);
+    return false;
+  }
 }
 async function deleteFolderById(folderId: string) {
   const folder = await findFolderById(folderId);
@@ -292,6 +303,25 @@ app.post("/folder", async (req, res) => {
   }
 });
 
+app.delete("/folder/all", async (req, res) => {
+  try {
+    const done = await deleteRootFolder();
+    if (done) {
+      return res.status(200).send({
+        message: "deleted successfully",
+        success: true,
+      });
+    } else {
+      return res.status(200).send({
+        error: "Failed to delete root folder",
+        success: false,
+      });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Failed to delete root folder");
+  }
+});
 // Delete Folder API (DELETE /folders/:folderId)
 app.delete("/folder/:folderId", async (req, res) => {
   try {
@@ -323,6 +353,7 @@ app.delete("/folder/:folderId", async (req, res) => {
     res.status(500).send("Failed to delete folder");
   }
 });
+
 app.get("/folder/:folderId", async (req, res) => {
   try {
     const folderId = req.params.folderId;
