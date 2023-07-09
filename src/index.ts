@@ -435,6 +435,71 @@ app.get("/folders", async (req, res) => {
   }
 });
 
+// Define the Order schema
+const orderSchema = new mongoose.Schema({
+  orderItems: [{ type: mongoose.Schema.Types.ObjectId, ref: "OrderItem" }],
+  phone: String,
+});
+
+const Order = mongoose.model("Order", orderSchema);
+
+// Define the OrderItem schema
+const orderItemSchema = new mongoose.Schema({
+  product: String,
+  quantity: Number,
+});
+
+const OrderItem = mongoose.model("OrderItem", orderItemSchema);
+
+// API endpoints
+
+// Create an order
+app.post("/orders", async (req, res) => {
+  try {
+    const { orderItems, phone } = req.body;
+
+    // Create order items
+    const createdOrderItems = await OrderItem.insertMany(orderItems);
+
+    // Create order
+    const order = new Order({
+      orderItems: createdOrderItems.map((item) => item._id),
+      phone,
+    });
+
+    // Save order
+    await order.save();
+
+    res.status(201).send({
+      data: order,
+      success: true,
+    });
+  } catch (error) {
+    console.error("Error creating order:", error);
+    res.status(500).json({ message: "An error occurred" });
+  }
+});
+
+// Get an order by ID
+app.get("/orders/:id", async (req, res) => {
+  try {
+    const orderId = req.params.id;
+
+    // Find order by ID and populate order items
+    const order = await Order.findById(orderId).populate("orderItems");
+
+    if (!order) {
+      res.status(404).json({ message: "Order not found" });
+      return;
+    }
+
+    res.status(200).json({ order });
+  } catch (error) {
+    console.error("Error getting order:", error);
+    res.status(500).json({ message: "An error occurred" });
+  }
+});
+
 app.listen(port, () => {
   console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
 });

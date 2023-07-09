@@ -448,6 +448,59 @@ app.get("/folders", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         res.status(500).send("Failed to read folders");
     }
 }));
+// Define the Order schema
+const orderSchema = new mongoose_1.default.Schema({
+    orderItems: [{ type: mongoose_1.default.Schema.Types.ObjectId, ref: "OrderItem" }],
+    phone: String,
+});
+const Order = mongoose_1.default.model("Order", orderSchema);
+// Define the OrderItem schema
+const orderItemSchema = new mongoose_1.default.Schema({
+    product: String,
+    quantity: Number,
+});
+const OrderItem = mongoose_1.default.model("OrderItem", orderItemSchema);
+// API endpoints
+// Create an order
+app.post("/orders", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { orderItems, phone } = req.body;
+        // Create order items
+        const createdOrderItems = yield OrderItem.insertMany(orderItems);
+        // Create order
+        const order = new Order({
+            orderItems: createdOrderItems.map((item) => item._id),
+            phone,
+        });
+        // Save order
+        yield order.save();
+        res.status(201).send({
+            data: order,
+            success: true,
+        });
+    }
+    catch (error) {
+        console.error("Error creating order:", error);
+        res.status(500).json({ message: "An error occurred" });
+    }
+}));
+// Get an order by ID
+app.get("/orders/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const orderId = req.params.id;
+        // Find order by ID and populate order items
+        const order = yield Order.findById(orderId).populate("orderItems");
+        if (!order) {
+            res.status(404).json({ message: "Order not found" });
+            return;
+        }
+        res.status(200).json({ order });
+    }
+    catch (error) {
+        console.error("Error getting order:", error);
+        res.status(500).json({ message: "An error occurred" });
+    }
+}));
 app.listen(port, () => {
     console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
 });
