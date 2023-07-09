@@ -1,7 +1,7 @@
 import express, { Express, Request, Response } from "express";
 import dotenv from "dotenv";
 import mongoose, { ConnectOptions, Document, Schema } from "mongoose";
-
+import { PhysicalFolderHelper } from "./helpers/physicalFolder.helper";
 const fs = require("fs");
 dotenv.config();
 const cors = require("cors");
@@ -84,7 +84,7 @@ async function constructFolderPath(parentId: string) {
   const parent = await findFolderById(parentId);
   let folderPath = "";
   if (!parent) {
-    folderPath = "/public/root";
+    folderPath = "public/root";
   } else {
     folderPath = `${parent?.path}/${parent?.name}`;
   }
@@ -93,7 +93,7 @@ async function constructFolderPath(parentId: string) {
 async function createRootFolder() {
   const folderObj = {
     name: "root",
-    path: "/public",
+    path: "public",
     parentId: new mongoose.Types.ObjectId(),
     type: FolderType.ROOT,
   };
@@ -142,13 +142,44 @@ async function findFolderById(folderId: any) {
   }
   return folder;
 }
+async function findFoldersByParentId(parentId: string) {
+  let folders: any;
+  try {
+    folders = await FolderModel.find({ parentId: parentId }).lean();
+  } catch (error) {
+    throw new Error(error?.message);
+  }
+  return folders;
+}
+async function checkDuplicateFolderName(body: any) {
+  try {
+    const folders = await FolderModel.find({
+      parentId: body?.parentId,
+      name: body?.name,
+    });
+    if (folders?.length > 0) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch (error) {
+    throw new Error(error?.message);
+  }
+}
 async function updateFolder(id: string, newFolderName: string) {
   let folder = await FolderModel.findById(id);
+  let oldName = folder?.name;
   if (!folder) {
     return null;
   }
   folder.name = newFolderName;
   folder = await folder.save();
+
+  await PhysicalFolderHelper.getInstance().updateFolder(
+    oldName,
+    folder.toObject()
+  );
+
   return folder;
 }
 async function deleteFolderById(folderId: string) {
@@ -165,14 +196,56 @@ async function deleteFolderById(folderId: string) {
   }
   const res = await FolderModel.findByIdAndDelete(folder?._id);
   const deleteFolder = res?.toObject();
+  await PhysicalFolderHelper.getInstance().deleteFolder(folder);
   return {
     message: "success",
   };
 }
+
+async function buildFolderStructure(folder: any): Promise<any> {
+  if (!folder) return null;
+  let subfolders: any = await findFoldersByParentId(folder?._id);
+  const children: any = await Promise.all(
+    subfolders.map((subfolder: any) => buildFolderStructure(subfolder))
+  );
+  return {
+    ...folder,
+    subfolders: children,
+  };
+}
+
+app.get("/folders/root-folder-structure", async (req, res) => {
+  console.log("root tree");
+
+  try {
+    const folderStructure = await getRootFolderStructure();
+    // const folderStructure =
+    //   await PhysicalFolderHelper.getInstance().getAllNestedFolders();
+    res.status(200).send({
+      data: folderStructure,
+      success: true,
+    });
+  } catch (error) {
+    res.status(500).send({
+      error: error?.message,
+      success: false,
+    });
+  }
+});
 // Create Folder API (POST /folders)
+
 app.post("/root-folder", async (req, res) => {
   try {
     const root = await getRootFolder();
+
+    // const folderName = `${root?.path}/${root?.name}`;
+    // const existFolder = await fs.existsSync(folderName);
+    // if (!existFolder) {
+    //   const ff = await fs.mkdirSync(folderName);
+    // }
+
+    PhysicalFolderHelper.getInstance().createFolder(root);
+
     res.status(200).send({
       data: root,
       success: true,
@@ -189,32 +262,28 @@ app.post("/root-folder", async (req, res) => {
 app.post("/folder", async (req, res) => {
   try {
     const folderObj = req?.body;
+    const exist = await checkDuplicateFolderName(folderObj);
+    if (exist) {
+      return res.status(409).send({
+        error: "Duplicate folder name",
+        success: false,
+      });
+    }
     const folder = await createFolder(folderObj);
     if (!folder) {
-      res.status(400).send({
+      return res.status(400).send({
         error: "Not create folder",
         success: false,
       });
     }
+
+    // // Create the physical folder in the public directory
+    await PhysicalFolderHelper.getInstance().createFolder(folder);
+
     res.status(200).send({
       data: folder,
       success: true,
     });
-    // const folderName = req.body.folderName;
-    // const parentId = req.body.parentId;
-
-    // const parentFolder = await FolderModel.findById(parentId);
-
-    // const newFolder = new FolderModel({
-    //   name: folderName,
-    //   parentId: parentFolder ? parentFolder._id : null,
-    // });
-
-    // const savedFolder = await newFolder.save();
-
-    // // Create the physical folder in the public directory
-    // const folderPath = `public/${savedFolder._id}`;
-    // fs.mkdirSync(folderPath);
 
     // res.send(savedFolder);
   } catch (err) {
@@ -288,6 +357,7 @@ app.put("/folder/:folderId", async (req, res) => {
         success: false,
       });
     }
+
     res.status(200).send({
       data: folder,
       success: true,
@@ -315,6 +385,12 @@ app.get("/folders", async (req, res) => {
 app.listen(port, () => {
   console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
 });
+async function getRootFolderStructure() {
+  const rootFolder = await getRootFolder();
+  const folderStructure = await buildFolderStructure(rootFolder);
+  return folderStructure;
+}
+
 async function getAllTheFolders() {
   const res = await FolderModel.find();
   const folders = await res;
